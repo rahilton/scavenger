@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <title>Faithful Heart Photo Scavenger Hunt</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+		<script src="https://cdn.socket.io/socket.io-1.4.0.js"></script>
+		<style>
+			img {max-width:100%;
+				 max-height:50%;}
+			th {width:33%}
+		</style>
+        
+    </head>
+
+    <body>
+        <div class = "container">
+			<h1>
+				Faithful Heart Photo Scavenger Hunt
+			</h1>
+			<div class = "row">
+				<div class = "col-1">
+					<a href = "/photo/<%=page-1%>" type="button" id = "downButton" class="btn btn-primary btn-lg">&lt;</a>
+				</div>
+				<div class = "col-10 mx-auto" style="width: 800px;">
+					<div class = "mx-auto" style="width: 800px;">
+						<h2> #<%=page%>:<%=item%> </h2>	
+					</div>
+					
+				</div>
+				<div class = "col-1">
+					<a href = "/photo/<%=(parseInt(page)+1)%>" type="button" id = "upButton" class="btn btn-primary btn-lg">&gt;</a>
+				</div>
+			</div>
+			<table>
+				<thead>
+					<th>Group 1</th>
+					<th>Group 2</th>
+					<th>Group 3</th>
+				</thead>
+				<tbody>
+					<div class = "thumbnail">
+						<td><img src="<%=photos[0].baseUrl%>"></td>
+					</div>
+					<div class = "thumbnail">
+						<td><img src="<%=photos[1].baseUrl%>"></td>
+					</div>
+					<div class = "thumbnail">
+						<td><img src="<%=photos[2].baseUrl%>"></td>
+					</div>
+					
+				</tbody>
+			</table>
+			<table>
+				<thead>
+					<th>Group 4</th>
+					<th>Group 5</th>
+					<th>Group 6</th>
+				</thead>
+				<tbody>
+					<div class = "thumbnail">
+						<td><img src="<%=photos[3].baseUrl%>"></td>
+					</div>
+					<div class = "thumbnail">
+						<td><img src="<%=photos[4].baseUrl%>"></td>
+					</div>
+					<div class = "thumbnail">
+						<td><img src="<%=photos[5].baseUrl%>"></td>
+					</div>
+					
+				</tbody>
+			</table>
+		</div>
+
+		
+
+        
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+		<script type="text/javascript" src="photo.js"></script>
+    </body>
+</html>
