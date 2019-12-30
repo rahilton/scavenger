@@ -29,19 +29,22 @@ app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
 
-var albumIds = [];
+var sessions = {};
 
 
 app.get("/", async(req, res) => {
-	//console.log(req.session);
+	//console.log(req.user);
 	if(req.user) {
+		sessions[req.user.profile.id] = {};
+		sessions[req.user.profile.id].albumIds = [];
 		const data = await libraryApiGetAlbums(req.user.token);
 		for(var i = 0; i < data.albums.length; i++) {
 			if(data.albums[i].title.substring(0,5) == "Group")
-				albumIds[parseInt(data.albums[i].title.substring(6,7)) - 1] = data.albums[i].id;
+				sessions[req.user.profile.id].albumIds[parseInt(data.albums[i].title.substring(6,7)) - 1] = data.albums[i].id;
 		}
-		console.log(albumIds);
-		res.redirect("/photo/1")
+		console.log(sessions[req.user.profile.id].albumIds);
+		//res.redirect("/photo/1")
+		res.redirect("album");
 		// console.log(req.user.token);
 		
 		
@@ -59,22 +62,68 @@ app.get("/", async(req, res) => {
 
 app.get("/photo/:num", async(req, res) => { 
 	var photos = [];
-	for(var i = 0; i < 6; i++) {
-		const parameters = {albumId:albumIds[i]};
-		const data = await libraryApiSearch(req.user.token, parameters);
-		var found = false;
-		for(var j = 0; j < data.photos.length; j++) {
-			if(data.photos[j].description && data.photos[j].description.trim() == "#" + req.params.num) {
-				found = true;
-				photos[i] = data.photos[j];
+	var returnCount = 0;
+	for(let i = 0; i < 6; i++) {
+		const parameters = {albumId:sessions[req.user.profile.id].albumIds[i]};
+		
+		/*const data =*/ libraryApiSearch(req.user.token, parameters, function(data) {
+			var found = false;
+			returnCount++;
+			
+			for(var j = 0; j < data.photos.length; j++) {
+				if(data.photos[j].description && data.photos[j].description.trim() == "#" + req.params.num) {
+					found = true;
+					photos[i] = data.photos[j];
+				}
 			}
-		}
-		if(!found) {
-			photos[i] = {baseUrl: "https://f4.bcbits.com/img/a0252633309_16.jpg"};
-		}
+			if(!found) {
+				photos[i] = {baseUrl: "https://f4.bcbits.com/img/a0252633309_16.jpg"};
+			}
+			
+			if(returnCount == 6)
+				res.render("photo", {photos:photos, page:req.params.num, item:getItem(req.params.num)});
+		});
+		
+		
 		
 	}
-	res.render("photo", {photos:photos, page:req.params.num, item:getItem(req.params.num)});
+})
+
+app.get("/album", async(req,res) => {
+	var albums = [];
+	var items = [];
+	var returnCount = 0;
+	for(let i = 0; i < 100; i++) {
+		items[i] = getItem(i+1);
+	}
+	for(let i = 0; i < 6; i++) {
+		const parameters = {albumId:sessions[req.user.profile.id].albumIds[i]};
+		
+		/*const data =*/ libraryApiSearch(req.user.token, parameters, function(data) {
+			var found = false;
+			returnCount++;
+			albums[i] = [];
+			for(let j = 0; j < data.photos.length; j++) {
+				if(data.photos[j].description) 
+					albums[i][j] = {baseUrl:data.photos[j].baseUrl, description:data.photos[j].description.trim()};
+				else
+					albums[i][j] = {baseUrl:data.photos[j].baseUrl, description:""};
+				albums[i][j].description = albums[i][j].description.replace("\n", " ");
+				
+				
+			}
+			
+			if(returnCount == 6) {
+				//console.log(albums[0][57]);
+				res.render("album", {albums:albums, notFound: "https://f4.bcbits.com/img/a0252633309_16.jpg", items:items});
+			}
+		});
+		
+		
+		
+	}
+	
+	//res.render("album", {albums:[]});
 })
 		
 // Star the OAuth login process for Google.
@@ -155,7 +204,7 @@ async function libraryApiGetAlbums(authToken) {
   return {albums, error};
 }
 
-async function libraryApiSearch(authToken, parameters) {
+async function libraryApiSearch(authToken, parameters, callback) {
   let photos = [];
   let nextPageToken = null;
   let error = null;
@@ -216,6 +265,8 @@ async function libraryApiSearch(authToken, parameters) {
   }
 
   //logger.info('Search complete.');
+	if(callback) callback({photos, parameters, error});
+	else
   return {photos, parameters, error};
 }
 
