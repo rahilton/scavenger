@@ -6,7 +6,7 @@ var active = 0;
 
 var myCanvas = document.getElementById("mainCanvas");
 myCanvas.width = document.documentElement.clientWidth*.8;
-myCanvas.height = myCanvas.width * 1000 / 1500
+myCanvas.height = (myCanvas.width * 1000 / 1500)*.8
 myCanvas.addEventListener("mousedown", mouseClicked);
 myCanvas.addEventListener("mousemove", mouseClicked);
 
@@ -15,7 +15,7 @@ window.addEventListener("resize", resizeCanvas, false);
 function resizeCanvas(e) {
 	var myCanvas = document.getElementById("mainCanvas");
 	myCanvas.width = document.documentElement.clientWidth*.8;
-	myCanvas.height = myCanvas.width * 1000 / 1500;
+	myCanvas.height = (myCanvas.width * 1000 / 1500)*.8;
 };
 
 function mouseClicked(e) {
@@ -25,7 +25,7 @@ function mouseClicked(e) {
 		e.getX = Math.floor((e.clientX - rect.left)*1500/can.width);
 		e.getY = Math.floor((e.clientY - rect.top)*1000/can.height);
 		var itemNum = Math.floor(e.getX/100) + Math.floor(e.getY/100)*10;
-		if(e.getX < 1000) {
+		if(e.getX > 0 && e.getX < 1000 && e.getY > 0 && e.getY < 1000) {
 			active = itemNum;
 			showAlbum();
 		}
@@ -89,7 +89,7 @@ var changeAlbum = function() {
 				   !isNaN(albums[albumNum-1][j].description.split(" ")[1].substring(1)) && 
 				   parseInt(albums[albumNum-1][j].description.split(" ")[1].substring(1)) > 0 &&
 				   parseInt(albums[albumNum-1][j].description.split(" ")[1].substring(1)) <= 100) {
-					let match = parseInt(albums[albumNum-1][j].description.split(" ")[1].substring(1));
+					let match = parseInt(albums[albumNum-1][j].description.split(" ")[1].substring(1))-1;
 					if(matchedWith[match]) {
 						matchedWith[i] = "Failed Match with #" + (match+1) + ". Is matched with #" + (matchedWith[match]+1) + ".";
 					}

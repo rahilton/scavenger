@@ -30,7 +30,7 @@
 		<script>var albums = [];
 			<%for(let i = 0; i < 6; i++) {%>
 				albums[<%=i%>] = [];
-				<%for(let j = 0; j < albums[i].length; j++) { %>
+				<%for(let j = 0; albums[i] && j < albums[i].length; j++) { %>
 					albums[<%=i%>][<%=j%>] = {baseUrl:"<%=albums[i][j].baseUrl%>", description:"<%=albums[i][j].description%>"};	
 				<%}%>
 			<%}%>

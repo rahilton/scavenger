@@ -3,6 +3,8 @@ const app = express();
 const config = require('./config.js');
 const session = require('express-session');
 const request = require('request-promise');
+const server = require('http').Server(app);       //  Used for creating sockets for open communication between the client and the server
+const io = require('socket.io')(server);          //  ^
 
 app.use(express.static(__dirname + '/js'));
 
@@ -37,14 +39,20 @@ app.get("/", async(req, res) => {
 	if(req.user) {
 		sessions[req.user.profile.id] = {};
 		sessions[req.user.profile.id].albumIds = [];
+		sessions[req.user.profile.id].scores = [];
+		sessions[req.user.profile.id].photos = [];
+		sessions[req.user.profile.id].token = req.user.token;
 		const data = await libraryApiGetAlbums(req.user.token);
 		for(var i = 0; i < data.albums.length; i++) {
 			if(data.albums[i].title.substring(0,5) == "Group")
 				sessions[req.user.profile.id].albumIds[parseInt(data.albums[i].title.substring(6,7)) - 1] = data.albums[i].id;
 		}
-		console.log(sessions[req.user.profile.id].albumIds);
-		//res.redirect("/photo/1")
-		res.redirect("album");
+		//console.log(sessions[req.user.profile.id].albumIds[0]);
+		pullPhotos(req.user.profile.id, function() {
+			res.redirect("/photo/1")
+		});
+		
+		//res.redirect("album");
 		// console.log(req.user.token);
 		
 		
@@ -57,37 +65,35 @@ app.get("/", async(req, res) => {
 		//console.log(data1);
 	}
 	else	
-	res.send("Not logged in");
+	res.render("intro");
 });
 
 app.get("/photo/:num", async(req, res) => { 
-	var photos = [];
-	var returnCount = 0;
-	for(let i = 0; i < 6; i++) {
-		const parameters = {albumId:sessions[req.user.profile.id].albumIds[i]};
-		
-		/*const data =*/ libraryApiSearch(req.user.token, parameters, function(data) {
-			var found = false;
-			returnCount++;
-			
-			for(var j = 0; j < data.photos.length; j++) {
-				if(data.photos[j].description && data.photos[j].description.trim() == "#" + req.params.num) {
-					found = true;
-					photos[i] = data.photos[j];
-				}
-			}
-			if(!found) {
-				photos[i] = {baseUrl: "https://f4.bcbits.com/img/a0252633309_16.jpg"};
-			}
-			
-			if(returnCount == 6)
-				res.render("photo", {photos:photos, page:req.params.num, item:getItem(req.params.num)});
-		});
-		
-		
-		
+	if(Number(req.params.num) < 1) {
+		res.redirect("/photo/100");
 	}
-})
+	else if(Number(req.params.num) > 100) {
+		res.redirect("/photo/1");
+	}
+	else {
+		var photos = [];
+		var matchedWith = [];
+		var returnCount = 0;
+		//console.log(sessions[req.user.profile.id].photos[0][0]);
+		for(let i = 0; i < 6; i++) {
+			photos[i] = sessions[req.user.profile.id].photos[i][req.params.num-1];
+			if(!isNaN(sessions[req.user.profile.id].matchedWith[i][req.params.num-1])) {
+				matchedWith[i] = "Matched with #" + (sessions[req.user.profile.id].matchedWith[i][req.params.num-1]+1) + " " + (getItem(sessions[req.user.profile.id].matchedWith[i][req.params.num-1]+1)); 
+			}
+		}
+		var items = [];
+		for(let i = 0; i < 100; i++) {
+			items[i] = getItem(i+1);
+		}
+	
+	res.render("photo", {photos:photos, page:req.params.num, items:items, scores:sessions[req.user.profile.id].scores, matchedWith:matchedWith, id:req.user.profile.id, fullMatchedWith:sessions[req.user.profile.id].matchedWith});
+	}
+});
 
 app.get("/album", async(req,res) => {
 	var albums = [];
@@ -99,24 +105,24 @@ app.get("/album", async(req,res) => {
 	for(let i = 0; i < 6; i++) {
 		const parameters = {albumId:sessions[req.user.profile.id].albumIds[i]};
 		
-		/*const data =*/ libraryApiSearch(req.user.token, parameters, function(data) {
+		libraryApiSearch(req.user.token, parameters, function(data) {
 			var found = false;
 			returnCount++;
-			albums[i] = [];
-			for(let j = 0; j < data.photos.length; j++) {
-				if(data.photos[j].description) 
-					albums[i][j] = {baseUrl:data.photos[j].baseUrl, description:data.photos[j].description.trim()};
-				else
-					albums[i][j] = {baseUrl:data.photos[j].baseUrl, description:""};
-				albums[i][j].description = albums[i][j].description.replace("\n", " ");
-				
-				
+			if(parameters.albumId) {
+				albums[i] = [];
+				for(let j = 0; j < data.photos.length; j++) {
+					if(data.photos[j].description) 
+						albums[i][j] = {baseUrl:data.photos[j].baseUrl, description:data.photos[j].description.trim()};
+					else
+						albums[i][j] = {baseUrl:data.photos[j].baseUrl, description:""};
+					albums[i][j].description = albums[i][j].description.replace("\n", " ");
+
+				}
 			}
-			
 			if(returnCount == 6) {
-				//console.log(albums[0][57]);
 				res.render("album", {albums:albums, notFound: "https://f4.bcbits.com/img/a0252633309_16.jpg", items:items});
 			}
+				
 		});
 		
 		
@@ -124,7 +130,7 @@ app.get("/album", async(req,res) => {
 	}
 	
 	//res.render("album", {albums:[]});
-})
+});
 		
 // Star the OAuth login process for Google.
 app.get('/auth/google', passport.authenticate('google', {
@@ -150,9 +156,101 @@ app.get('/logout', (req, res) => {
   res.redirect('/');
 });
 
-app.listen(process.env.PORT || 3000, process.env.IP, () => {
+server.listen(process.env.PORT || 3000, process.env.IP, () => {
     console.log('Server is running on port 3000');
 });
+
+function pullPhotos(id, callback) {
+	//console.log("Starting pull photos");
+	var albums = [];
+	var returnCount = 0;
+	for(let alb = 0; alb < 6; alb++) {
+		const parameters = {albumId:sessions[id].albumIds[alb]};
+
+		libraryApiSearch(sessions[id].token, parameters, function(data) {
+			let found = false;
+			let newPhotos = [];
+			let newMatchedWith = [];
+	
+			if(!parameters.albumId) data.photos = [];
+	
+			returnCount++;
+			albums[alb] = [];
+			for(let j = 0; j < data.photos.length; j++) {
+				if(data.photos[j].description) 
+					albums[alb][j] = {baseUrl:data.photos[j].baseUrl, description:data.photos[j].description.trim()};
+				else
+					albums[alb][j] = {baseUrl:data.photos[j].baseUrl, description:""};
+				albums[alb][j].description = albums[alb][j].description.replace("\n", " ");
+			}
+			
+			for(let i = 0; i < 100; i++) {
+				if(newPhotos[i]) continue;
+				let found = false;
+				for(let j = 0; j < albums[alb].length; j++) { 
+					if(albums[alb][j].description && albums[alb][j].description.split(" ")[0].trim() == "#" + (i+1)) {
+						found = true;
+						if(albums[alb][j].description.split(" ")[1] && albums[alb][j].description.split(" ")[1].substring(0,1) == "#" && 
+						   !isNaN(albums[alb][j].description.split(" ")[1].substring(1)) && 
+						   parseInt(albums[alb][j].description.split(" ")[1].substring(1)) > 0 &&
+						   parseInt(albums[alb][j].description.split(" ")[1].substring(1)) <= 100) {
+							let match = parseInt(albums[alb][j].description.split(" ")[1].substring(1)) - 1;
+							if(newMatchedWith[match]) {
+								newMatchedWith[i] = "Failed Match with #" + (match+1) + ". Is matched with #" + (newMatchedWith[match]+1) + ".";
+							}
+							else {
+								newMatchedWith[i] = match;
+								newMatchedWith[match] = i;
+								newPhotos[match] = albums[alb][j].baseUrl;
+							}
+						}
+						newPhotos[i] = albums[alb][j].baseUrl;
+					}
+				}
+				if(!found && !newPhotos[i]) {
+					newPhotos[i] = "https://f4.bcbits.com/img/a0252633309_16.jpg";
+				}
+			}
+			if(!sessions[id].photos) sessions[id].photos = [];
+			if(!sessions[id].photos[alb]) sessions[id].photos[alb] = [];
+			if(!sessions[id].matchedWith) sessions[id].matchedWith = [];
+			if(!sessions[id].matchedWith[alb]) sessions[id].matchedWith[alb] = [];
+			if(!sessions[id].scores) sessions[id].scores = [];
+			if(!sessions[id].scores[alb]) sessions[id].scores[alb] = [];
+			
+			for(let review = 0; review < 100; review++) {
+				if(sessions[id].photos[alb][review] != newPhotos[review]) {
+					sessions[id].scores[alb][review] = 0;
+				}
+				sessions[id].photos[alb][review] = newPhotos[review];
+				sessions[id].matchedWith[alb][review] = newMatchedWith[review];
+			}
+			if(returnCount == 6) {
+				callback();
+			}
+		});
+	}
+}
+
+io.on('connection', function(socket) {
+	socket.on('change score', function(data) {
+		if(!sessions[data.id].scores) sessions[data.id].scores = [];
+		if(!sessions[data.id].scores[data.group]) sessions[data.id].scores[data.group] = [];
+		sessions[data.id].scores[data.group][data.photo] = data.score;
+		
+		if(data.score == "2") {
+			sessions[data.id].scores[data.group][sessions[data.id].matchedWith[data.group][data.photo]] = 1;
+		}
+		socket.emit('update score', {scores:sessions[data.id].scores, matchedWith:sessions[data.id].matchedWith});
+	})
+	
+	socket.on('pull photos', function(id) {
+		pullPhotos(id.id, function() {
+			socket.emit("refresh");
+		})
+	});
+	
+});;
 
 async function libraryApiGetAlbums(authToken) {
   let albums = [];
@@ -278,7 +376,7 @@ async function getOnePhoto(authToken, id) {
 		 auth: {'bearer': authToken},
 		 });
 
-		console.log(result);
+		//console.log(result);
 		photo = result;
 
 	} catch (err) {

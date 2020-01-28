@@ -12,75 +12,144 @@
 			img {max-width:100%;
 				 max-height:50%;}
 			th {width:33%}
+			body {padding-top:100px;padding-bottom:100px}
 		</style>
         
     </head>
 
     <body>
         <div class = "container">
-			<h1>
-				Faithful Heart Photo Scavenger Hunt
-			</h1>
-			<div class = "row">
-				<div class = "col-1">
-					<a href = "/photo/<%=page-1%>" type="button" id = "downButton" class="btn btn-primary btn-lg">&lt;</a>
-				</div>
-				<div class = "col-10 mx-auto" style="width: 800px;">
-					<div class = "mx-auto" style="width: 800px;">
-						<h2> #<%=page%>:<%=item%> </h2>	
+			<div class = "fixed-top bg-light">
+				<h2 class = "text-center">Faithful Heart Photo Scavenger Hunt</h2>
+				<div class = "row">
+					<div class = "col-1">
+						<a href = "/photo/<%=page-1%>" type="button" id = "downButton" class="btn btn-primary btn-lg">&lt;</a>
 					</div>
-					
-				</div>
-				<div class = "col-1">
-					<a href = "/photo/<%=(parseInt(page)+1)%>" type="button" id = "upButton" class="btn btn-primary btn-lg">&gt;</a>
+					<div class = "col-10">
+						<div class = "text-center">
+							<h2> #<%=page%>:<%=items[page-1]%> </h2>	
+						</div>
+
+					</div>
+					<div class = "col-1">
+						<a href = "/photo/<%=(parseInt(page)+1)%>" type="button" id = "upButton" class="btn btn-primary btn-lg">&gt;</a>
+					</div>
 				</div>
 			</div>
+			<%	var sums = [];
+				for(let i = 0; i < 6; i++) {
+					sums[i] = 0;
+					for(let j = 0; j < 100; j++) {
+						if(scores[i] && scores[i][j])
+							sums[i] += Number(scores[i][j]);
+					}
+				}
+			%>
+			
+			<div class = "fixed-bottom">
+				<table class = "table w-100 table-light">
+					<tr>
+						<td><a href = "#" data-toggle="modal" data-target= "#sendModal"><h4>Group 1: <span id="score1"><%=sums[0]%></span></h4></a></td>
+						<td><a href = "#" data-toggle="modal" data-target= "#sendModal"><h4>Group 2: <span id="score2"><%=sums[1]%></span></h4></a></td>
+						<td><a href = "#" data-toggle="modal" data-target= "#sendModal"><h4>Group 3: <span id="score3"><%=sums[2]%></span></h4></a></td>
+						<td><a href = "#" data-toggle="modal" data-target= "#sendModal"><h4>Group 4: <span id="score4"><%=sums[3]%></span></h4></a></td>
+						<td><a href = "#" data-toggle="modal" data-target= "#sendModal"><h4>Group 5: <span id="score5"><%=sums[4]%></span></h4></a></td>
+						<td><a href = "#" data-toggle="modal" data-target= "#sendModal"><h4>Group 6: <span id="score6"><%=sums[5]%></span></h4></a></td>
+						<td><button class = "btn btn-primary" id = "update">Update</button></td>
+					</tr>
+				</table>
+			</div>
 			<table>
+				<% for(let row = 0; row < 2; row++) { %>
 				<thead>
-					<th>Group 1</th>
-					<th>Group 2</th>
-					<th>Group 3</th>
+					<th>Group <%=1 + row*3%></th>
+					<th>Group <%=2 + row*3%></th>
+					<th>Group <%=3 + row*3%></th>
 				</thead>
 				<tbody>
-					<div class = "thumbnail">
-						<td><img src="<%=photos[0].baseUrl%>"></td>
-					</div>
-					<div class = "thumbnail">
-						<td><img src="<%=photos[1].baseUrl%>"></td>
-					</div>
-					<div class = "thumbnail">
-						<td><img src="<%=photos[2].baseUrl%>"></td>
-					</div>
-					
+					<% for(let i = 0 + row*3; i < 3+ row*3; i++) { %>
+					<td>
+						<div class = "thumbnail">
+								<img src="<%=photos[i]%>">
+						</div>
+						<% var active = "active"%>
+						<div class="btn-group btn-group-toggle" data-toggle="buttons">
+						  <label class="btn btn-secondary score <%if(!scores[i][page-1] || scores[i][page-1] == 0) {%><%= active %><%}%>" id="<%=page-1%> <%=i%> 0">
+							<input type="radio" name="options" autocomplete="off" > 0
+						  </label>
+						  <label class="btn btn-secondary score <%if(scores[i][page-1] == 1) { %><%= active %><%}%>" id="<%=page-1%> <%=i%> 1">
+							<input type="radio" name="options" autocomplete="off"> 1
+						  </label>
+							<%if(matchedWith[i]) { %>
+						  <label class="btn btn-secondary score <%if(scores[i][page-1] == 2) { %><%= active %><%}%>" id="<%=page-1%> <%=i%> 2">
+							<input type="radio" name="options" autocomplete="off"> 2
+						  </label>
+							<p><%=matchedWith[i]%></p>
+							<%}%>
+						</div>
+					</td>
+					<%}%>
 				</tbody>
-			</table>
-			<table>
-				<thead>
-					<th>Group 4</th>
-					<th>Group 5</th>
-					<th>Group 6</th>
-				</thead>
-				<tbody>
-					<div class = "thumbnail">
-						<td><img src="<%=photos[3].baseUrl%>"></td>
-					</div>
-					<div class = "thumbnail">
-						<td><img src="<%=photos[4].baseUrl%>"></td>
-					</div>
-					<div class = "thumbnail">
-						<td><img src="<%=photos[5].baseUrl%>"></td>
-					</div>
-					
-				</tbody>
+				<%}%>
 			</table>
 		</div>
-
 		
-
-        
+		<div class="modal fade" id="sendModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+		  <div class="modal-dialog modal-lg" role="document">
+			<div class="modal-content">
+			  <div class="modal-header">
+				<h5 class="modal-title" id="sendTitle"></h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+				  <span aria-hidden="true">&times;</span>
+				</button>
+			  </div>
+			  <div class="modal-body" id ="sendList">
+			  	<table class = "table table-sm">
+					<thead>
+						<tr>
+							<th>Item</th>
+							<th>Group 1</th>
+							<th>Group 2</th>
+							<th>Group 3</th>
+							<th>Group 4</th>
+							<th>Group 5</th>
+							<th>Group 6</th>
+						</tr>
+					</thead>
+					<tbody id = "summary">
+						<%for(let i = 0; i < 100; i++) { %>
+							<tr>
+								<td>#<%=(i+1)%> <%=items[i]%></td>
+							<%for(let j = 0; j < 6; j++) { %>
+								<td class = "modalScore" id = "<%=j%> <%=i%>">
+									<%if(scores[j][i]) {%> 
+										<%=scores[j][i]%>
+										<%if(scores[j][i] == 2) {%>
+											(#<%=fullMatchedWith[j][i]+1%>)
+										<%}%>
+									<%}%>
+								
+								</td>	
+							<%}%>
+							</tr>
+						<%}%>
+					</tbody>
+				  </table>
+			  </div>
+			  <div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+			  </div>
+			</div>
+		  </div>
+		</div>
+		
+		<script>
+			var id = "<%=id%>"
+		</script>
+		        
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-		<script type="text/javascript" src="photo.js"></script>
+		<script type="text/javascript" src="../photo.js"></script>
     </body>
 </html>
