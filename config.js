@@ -24,7 +24,8 @@ config.oAuthclientSecret = 'u73W0useGpV-xxA_vLEgjBYk';
 
 // The callback to use for OAuth requests. This is the URL where the app is
 // running. For testing and running it locally, use 127.0.0.1.
-config.oAuthCallbackUrl = 'https://photoscavenger-zwhpt.run-us-west2.goorm.io/auth/google/callback';
+config.oAuthCallbackUrl = '/auth/google/callback';
+//config.oAuthCallbackUrl = 'https://photoscavenger-zwhpt.run-us-west2.goorm.io/auth/google/callback';
 
 // The port where the app should listen for requests.
 config.port = 8080;
