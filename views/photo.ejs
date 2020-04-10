@@ -13,6 +13,11 @@
 				 max-height:50%;}
 			th {width:33%}
 			body {padding-top:100px;padding-bottom:100px}
+			a {
+				float:right;
+				margin:5px;
+			}
+		
 		</style>
         
     </head>
@@ -20,7 +25,10 @@
     <body>
         <div class = "container">
 			<div class = "fixed-top bg-light">
-				<h2 class = "text-center">Faithful Heart Photo Scavenger Hunt</h2>
+				<h2 class = "text-center">Faithful Heart Photo Scavenger Hunt
+					<a href = "/logout" class = "btn btn-primary">Log Out</a>
+					<a href = "/album" class = "btn btn-primary">Album</a>
+				</h2>
 				<div class = "row">
 					<div class = "col-1">
 						<a href = "/photo/<%=page-1%>" type="button" id = "downButton" class="btn btn-primary btn-lg">&lt;</a>

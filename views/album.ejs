@@ -8,6 +8,12 @@
         <title>Faithful Heart Photo Scavenger Hunt</title>
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 		<script src="https://cdn.socket.io/socket.io-1.4.0.js"></script>
+		<style>
+			a {
+				float:right;
+				margin:5px;
+			}
+		</style>
 		
         
     </head>
@@ -16,6 +22,8 @@
         <div id = "main" class = "container">
 			<h1>
 				Faithful Heart Photo Scavenger Hunt
+				<a href = "/logout" class = "btn btn-primary">Log Out</a>
+				<a href = "/photo/1" class = "btn btn-primary">Gallery</a>
 			</h1>
 			<h2>
 				Select Album: 
@@ -24,7 +32,10 @@
 						<button class = "btn">Group <%=(i+1)%> </button>
 					<%}%>
 				<%}%>
+				
+				
 			</h2>
+			
 			<canvas id = "mainCanvas" width ="1500px" height = "1000px"></canvas>
 		</div>
 		<script>var albums = [];
