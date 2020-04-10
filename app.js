@@ -406,7 +406,8 @@ async function getOnePhoto(authToken, id) {
 }
 
 function getItem(num) {
-	return items[num];
+	return "It's a secret until the Easter!"
+	//return items[num];
 	// if(num == 1) return	"A Blue Slide";
 	// if(num == 2) return "A Satellite Dish";
 	// if(num == 3) return "A Poinsettia";
