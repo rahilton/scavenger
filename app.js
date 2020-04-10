@@ -86,22 +86,24 @@ app.get("/photo/:num", async(req, res) => {
 		res.redirect("/photo/1");
 	}
 	else {
-		var photos = [];
-		var matchedWith = [];
-		var returnCount = 0;
-		//console.log(sessions[req.user.profile.id].photos[0][0]);
-		for(let i = 0; i < 6; i++) {
-			photos[i] = sessions[req.user.profile.id].photos[i][req.params.num-1];
-			if(!isNaN(sessions[req.user.profile.id].matchedWith[i][req.params.num-1])) {
-				matchedWith[i] = "Matched with #" + (sessions[req.user.profile.id].matchedWith[i][req.params.num-1]+1) + " " + (getItem(sessions[req.user.profile.id].matchedWith[i][req.params.num-1]+1)); 
+		readFromGoogle(function() {
+			var photos = [];
+			var matchedWith = [];
+			var returnCount = 0;
+			//console.log(sessions[req.user.profile.id].photos[0][0]);
+			for(let i = 0; i < 6; i++) {
+				photos[i] = sessions[req.user.profile.id].photos[i][req.params.num-1];
+				if(!isNaN(sessions[req.user.profile.id].matchedWith[i][req.params.num-1])) {
+					matchedWith[i] = "Matched with #" + (sessions[req.user.profile.id].matchedWith[i][req.params.num-1]+1) + " " + (getItem(sessions[req.user.profile.id].matchedWith[i][req.params.num-1]+1)); 
+				}
 			}
-		}
-		var items = [];
-		for(let i = 0; i < 100; i++) {
-			items[i] = getItem(i+1);
-		}
-	
-	res.render("photo", {photos:photos, page:req.params.num, items:items, scores:sessions[req.user.profile.id].scores, matchedWith:matchedWith, id:req.user.profile.id, fullMatchedWith:sessions[req.user.profile.id].matchedWith});
+			var items = [];
+			for(let i = 0; i < 100; i++) {
+				items[i] = getItem(i+1);
+			}
+
+		res.render("photo", {photos:photos, page:req.params.num, items:items, scores:sessions[req.user.profile.id].scores, matchedWith:matchedWith, id:req.user.profile.id, fullMatchedWith:sessions[req.user.profile.id].matchedWith});
+		});
 	}
 });
 
@@ -109,36 +111,37 @@ app.get("/album", async(req,res) => {
 	var albums = [];
 	var items = [];
 	var returnCount = 0;
-	for(let i = 0; i < 100; i++) {
-		items[i] = getItem(i+1);
-	}
-	for(let i = 0; i < 6; i++) {
-		const parameters = {albumId:sessions[req.user.profile.id].albumIds[i]};
-		
-		libraryApiSearch(req.user.token, parameters, function(data) {
-			var found = false;
-			returnCount++;
-			if(parameters.albumId) {
-				albums[i] = [];
-				for(let j = 0; j < data.photos.length; j++) {
-					if(data.photos[j].description) 
-						albums[i][j] = {baseUrl:data.photos[j].baseUrl, description:data.photos[j].description.trim()};
-					else
-						albums[i][j] = {baseUrl:data.photos[j].baseUrl, description:""};
-					albums[i][j].description = albums[i][j].description.replace("\n", " ");
+	readFromGoogle( function() {
+		for(let i = 0; i < 100; i++) {
+			items[i] = getItem(i+1);
+		}
+		for(let i = 0; i < 6; i++) {
+			const parameters = {albumId:sessions[req.user.profile.id].albumIds[i]};
 
+			libraryApiSearch(req.user.token, parameters, function(data) {
+				var found = false;
+				returnCount++;
+				if(parameters.albumId) {
+					albums[i] = [];
+					for(let j = 0; j < data.photos.length; j++) {
+						if(data.photos[j].description) 
+							albums[i][j] = {baseUrl:data.photos[j].baseUrl, description:data.photos[j].description.trim()};
+						else
+							albums[i][j] = {baseUrl:data.photos[j].baseUrl, description:""};
+						albums[i][j].description = albums[i][j].description.replace("\n", " ");
+
+					}
 				}
-			}
-			if(returnCount == 6) {
-				res.render("album", {albums:albums, notFound: "https://f4.bcbits.com/img/a0252633309_16.jpg", items:items});
-			}
-				
-		});
-		
-		
-		
-	}
-	
+				if(returnCount == 6) {
+					res.render("album", {albums:albums, notFound: "https://f4.bcbits.com/img/a0252633309_16.jpg", items:items});
+				}
+
+			});
+
+
+
+		}
+	});
 	//res.render("album", {albums:[]});
 });
 		
@@ -523,11 +526,13 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
 const TOKEN_PATH = 'token.json';
 
 // Load client secrets from a local file.
-fs.readFile('credentials.json', (err, content) => {
-  if (err) return console.log('Error loading client secret file:', err);
-  // Authorize a client with credentials, then call the Google Sheets API.
-  authorize(JSON.parse(content), refreshItems);
-});
+function readFromGoogle(callback) {
+	fs.readFile('credentials.json', (err, content) => {
+	  if (err) return console.log('Error loading client secret file:', err);
+	  // Authorize a client with credentials, then call the Google Sheets API.
+	  authorize(JSON.parse(content), refreshItems, callback);
+	});
+}
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -535,7 +540,7 @@ fs.readFile('credentials.json', (err, content) => {
  * @param {Object} credentials The authorization client credentials.
  * @param {function} callback The callback to call with the authorized client.
  */
-function authorize(credentials, callback) {
+function authorize(credentials, callback, callback2) {
   const {client_secret, client_id, redirect_uris} = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
       client_id, client_secret, redirect_uris[0]);
@@ -544,7 +549,7 @@ function authorize(credentials, callback) {
   fs.readFile(TOKEN_PATH, (err, token) => {
     if (err) return getNewToken(oAuth2Client, callback);
     oAuth2Client.setCredentials(JSON.parse(token));
-    callback(oAuth2Client);
+    callback(oAuth2Client, callback2);
   });
 }
 
@@ -584,23 +589,24 @@ function getNewToken(oAuth2Client, callback) {
  * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
  */
-function refreshItems(auth) {
-  const sheets = google.sheets({version: 'v4', auth});
-  sheets.spreadsheets.values.get({
-    spreadsheetId: '1o47nGn3lv07RqsrbT3dOjxiJrx4NI315ranAe5Wx3Vo',
-    range: 'Combined!A3:H27',
-  }, (err, res) => {
-    if (err) return console.log('The API returned an error: ' + err);
-    const rows = res.data.values;
-    if (rows.length) {
-		for(var i = 0; i < rows.length; i++) {
-			items[parseInt(rows[i][0].substring(1))] = rows[i][1];
-			items[parseInt(rows[i][2].substring(1))] = rows[i][3];
-			items[parseInt(rows[i][4].substring(1))] = rows[i][5];
-			items[parseInt(rows[i][6].substring(1))] = rows[i][7];
-		}
-    } else {
-      console.log('No data found.');
-    }
-  });
+function refreshItems(auth, callback) {
+	const sheets = google.sheets({version: 'v4', auth});
+	sheets.spreadsheets.values.get({
+    	spreadsheetId: '1o47nGn3lv07RqsrbT3dOjxiJrx4NI315ranAe5Wx3Vo',
+    	range: 'Combined!A3:H27',
+	}, (err, res) => {
+    	if (err) return console.log('The API returned an error: ' + err);
+    	const rows = res.data.values;
+    	if (rows.length) {
+			for(var i = 0; i < rows.length; i++) {
+				items[parseInt(rows[i][0].substring(1))] = rows[i][1];
+				items[parseInt(rows[i][2].substring(1))] = rows[i][3];
+				items[parseInt(rows[i][4].substring(1))] = rows[i][5];
+				items[parseInt(rows[i][6].substring(1))] = rows[i][7];
+			}
+    	} else {
+      	console.log('No data found.');
+    	}
+		if(callback) callback();
+  	});
 }
