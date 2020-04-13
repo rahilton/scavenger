@@ -54,8 +54,12 @@ app.get("/", async(req, res) => {
 		sessions[req.user.profile.id].token = req.user.token;
 		const data = await libraryApiGetAlbums(req.user.token);
 		for(var i = 0; i < data.albums.length; i++) {
-			if(data.albums[i].title.substring(0,5) == "Group")
+			if(data.albums[i].title && data.albums[i].title.substring(0,5) == "Group")
 				sessions[req.user.profile.id].albumIds[parseInt(data.albums[i].title.substring(6,7)) - 1] = data.albums[i].id;
+		}
+		for(var i = 0; i < data.sharedAlbums.length; i++) {
+			if(data.sharedAlbums[i].title && data.sharedAlbums[i].title.substring(0,5) == "Group")
+				sessions[req.user.profile.id].albumIds[parseInt(data.sharedAlbums[i].title.substring(6,7)) - 1] = data.sharedAlbums[i].id;
 		}
 		//console.log(sessions[req.user.profile.id].albumIds[0]);
 		pullPhotos(req.user.profile.id, function() {
@@ -269,53 +273,95 @@ io.on('connection', function(socket) {
 });;
 
 async function libraryApiGetAlbums(authToken) {
-  let albums = [];
-  let nextPageToken = null;
-  let error = null;
-  let parameters = {pageSize: config.albumPageSize};
+	let albums = [];
+	let sharedAlbums = [];
+	let nextPageToken = null;
+	let error = null;
+	let parameters = {pageSize: config.albumPageSize};
 
-  try {
+	try {
     // Loop while there is a nextpageToken property in the response until all
     // albums have been listed.
-    do {
+		do {
       //logger.verbose(`Loading albums. Received so far: ${albums.length}`);
       // Make a GET request to load the albums with optional parameters (the
       // pageToken if set).
-      const result = await request.get(config.apiEndpoint + '/v1/albums', {
-        headers: {'Content-Type': 'application/json'},
-        qs: parameters,
-        json: true,
-        auth: {'bearer': authToken},
-      });
-		// console.log("/////////")
-		// console.log(parameters);
-		// console.log("/////////")
-		// console.log(result);
-      //logger.debug(`Response: ${result}`);
+			const result = await request.get(config.apiEndpoint + '/v1/albums', {
+				headers: {'Content-Type': 'application/json'},
+					qs: parameters,
+					json: true,
+					auth: {'bearer': authToken},
+			});
+			// console.log(result);
+			//console.log(sharedResult);
+			// console.log("/////////")
+			// console.log(parameters);
+			// console.log("/////////")
+			// console.log(result);
+			//logger.debug(`Response: ${result}`);
 
-      if (result && result.albums) {
-        //logger.verbose(`Number of albums received: ${result.albums.length}`);
-        // Parse albums and add them to the list, skipping empty entries.
-        const items = result.albums.filter(x => !!x);
-
-        albums = albums.concat(items);
-      }
-      parameters.pageToken = result.nextPageToken;
-      // Loop until all albums have been listed and no new nextPageToken is
-      // returned.
-    } while (parameters.pageToken != null);
-
-  } catch (err) {
+			if (result && result.albums) {
+			//logger.verbose(`Number of albums received: ${result.albums.length}`);
+			// Parse albums and add them to the list, skipping empty entries.
+				const items = result.albums.filter(x => !!x);
+				albums = albums.concat(items);
+			}
+			parameters.pageToken = result.nextPageToken;
+		  // Loop until all albums have been listed and no new nextPageToken is
+		  // returned.
+		} while (parameters.pageToken != null);
+	
+	} catch (err) {
     // If the error is a StatusCodeError, it contains an error.error object that
     // should be returned. It has a name, statuscode and message in the correct
     // format. Otherwise extract the properties.
-    error = err.error.error ||
-        {name: err.name, code: err.statusCode, message: err.message};
-    //logger.error(error);
-  }
+		error = err.error.error || {name: err.name, code: err.statusCode, message: err.message};
+    //logger.error(error);	
+	}
+	
+	try {
+    // Loop while there is a nextpageToken property in the response until all
+    // albums have been listed.
+		do {
+      //logger.verbose(`Loading albums. Received so far: ${albums.length}`);
+      // Make a GET request to load the albums with optional parameters (the
+      // pageToken if set).
+			const sharedResult = await request.get(config.apiEndpoint + '/v1/sharedAlbums', {
+				headers: {'Content-Type': 'application/json'},
+					qs: parameters,
+					json: true,
+					auth: {'bearer': authToken},
+			});
+			// console.log(result);
+			//console.log(sharedResult);
+			// console.log("/////////")
+			// console.log(parameters);
+			// console.log("/////////")
+			// console.log(result);
+			//logger.debug(`Response: ${result}`);
+
+			if (sharedResult && sharedResult.sharedAlbums) {
+			//logger.verbose(`Number of albums received: ${result.albums.length}`);
+			// Parse albums and add them to the list, skipping empty entries.
+				const items = sharedResult.sharedAlbums.filter(x => !!x);
+				sharedAlbums = sharedAlbums.concat(items);
+			}
+			parameters.pageToken = sharedResult.nextPageToken;
+		  // Loop until all albums have been listed and no new nextPageToken is
+		  // returned.
+		} while (parameters.pageToken != null);
+	
+	} catch (err) {
+    // If the error is a StatusCodeError, it contains an error.error object that
+    // should be returned. It has a name, statuscode and message in the correct
+    // format. Otherwise extract the properties.
+		error = err.error.error || {name: err.name, code: err.statusCode, message: err.message};
+    //logger.error(error);	
+	}
 
   //logger.info('Albums loaded.');
-  return {albums, error};
+	console.log(sharedAlbums.length);
+	return {albums, sharedAlbums, error};
 }
 
 async function libraryApiSearch(authToken, parameters, callback) {
